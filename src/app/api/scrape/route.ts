@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
     // 2️⃣ Fetch HTML and extract ytInitialData
     const html = await scrap(videoUrl);
-    const ytInitialDataRegex = /var ytInitialData = (.*?);<\/script>/s;
+    const ytInitialDataRegex = /var ytInitialData = ([\s\S]*?);<\/script>/;
     const match = html.match(ytInitialDataRegex);
 
     if (!match || !match[1]) {
