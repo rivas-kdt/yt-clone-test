@@ -10,7 +10,7 @@ async function fetchWithYouTubeKeys(urlBuilder: (key: string) => string) {
     process.env.YOUTUBE_API_1,
     process.env.YOUTUBE_API_2,
     process.env.YOUTUBE_API_3,
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   let lastError: any = null;
 
