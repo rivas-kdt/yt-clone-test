@@ -7,7 +7,6 @@ export async function GET() {
 
   const browser = await puppeteer.launch({
     args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
     executablePath,
     headless: chromium.headless,
   });
@@ -17,6 +16,7 @@ export async function GET() {
     waitUntil: "networkidle2",
   });
 
+  // Wait for YouTube's related section
   await page.waitForSelector("#related #items", { timeout: 10000 });
   const html = await page.$eval("#related #items", (el) => el.innerHTML);
 
