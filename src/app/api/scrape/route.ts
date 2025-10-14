@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const executablePath = await chromium.executablePath();
+  const execPath = await (chromium as any).executablePath();
 
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath,
-    headless: chromium.headless,
+    args: (chromium as any).args,
+    executablePath: execPath,
+    headless: true, // 👈 use Puppeteer's own flag instead
   });
 
   const page = await browser.newPage();
@@ -16,7 +17,6 @@ export async function GET() {
     waitUntil: "networkidle2",
   });
 
-  // Wait for YouTube's related section
   await page.waitForSelector("#related #items", { timeout: 10000 });
   const html = await page.$eval("#related #items", (el) => el.innerHTML);
 
