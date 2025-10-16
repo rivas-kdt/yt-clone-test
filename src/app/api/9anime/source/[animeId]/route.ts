@@ -5,21 +5,21 @@ import * as cheerio from "cheerio";
 
 const BASE_URL = "https://9animetv.to";
 
-/**
- * Example:
- * /api/9anime/source/gachiakuta-19785?ep=141674
- */
 export async function GET(
   request: Request,
-  context: { params: { animeId: string } }
+  context: { params: Promise<{ animeId: string }> } // 👈 FIX: params is now a Promise
 ) {
-  const { animeId } = context.params;
+  const { animeId } = await context.params; // 👈 FIX: await it
+
   const { searchParams } = new URL(request.url);
   const episodeId = searchParams.get("ep");
 
   if (!animeId || !episodeId) {
     return NextResponse.json(
-      { success: false, message: "Missing animeId or episodeId (?ep=) in request." },
+      {
+        success: false,
+        message: "Missing animeId or episodeId (?ep=) in request.",
+      },
       { status: 400 }
     );
   }
@@ -43,7 +43,12 @@ export async function GET(
     }
 
     const $ = cheerio.load(res.data.html);
-    const serverItems: { id: string; type: string; name: string; serverId: string }[] = [];
+    const serverItems: {
+      id: string;
+      type: string;
+      name: string;
+      serverId: string;
+    }[] = [];
 
     $(".server-item").each((_, el) => {
       const id = $(el).attr("data-id") || "";
@@ -60,12 +65,12 @@ export async function GET(
       );
     }
 
-    // 2️⃣ Choose the preferred server (Vidstreaming or fallback to first)
+    // 2️⃣ Choose preferred server (Vidstream first)
     const preferred =
       serverItems.find((s) => s.name.toLowerCase().includes("vidstream")) ||
       serverItems[0];
 
-    // 3️⃣ Fetch the actual playable video source
+    // 3️⃣ Fetch the actual video source
     const sourceUrl = `${BASE_URL}/ajax/episode/sources?id=${preferred.id}`;
     const sourceRes = await axios.get(sourceUrl, {
       headers: {
