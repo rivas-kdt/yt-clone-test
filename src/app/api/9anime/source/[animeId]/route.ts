@@ -11,10 +11,10 @@ const BASE_URL = "https://9animetv.to";
  */
 export async function GET(
   request: Request,
-  { params }: { params: { animeId: string } }
+  context: { params: { animeId: string } }
 ) {
+  const { animeId } = context.params;
   const { searchParams } = new URL(request.url);
-  const { animeId } = params;
   const episodeId = searchParams.get("ep");
 
   if (!animeId || !episodeId) {
