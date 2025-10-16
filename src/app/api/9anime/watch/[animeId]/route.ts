@@ -7,10 +7,10 @@ const BASE_URL = "https://9animetv.to";
 
 export async function GET(
   request: Request,
-  { params }: { params: { animeId: string } }
+  context: { params: Promise<{ animeId: string }> } // ✅ FIX: params is Promise
 ) {
+  const { animeId: animeSlug } = await context.params; // ✅ FIX: await it
   const { searchParams } = new URL(request.url);
-  const animeSlug = params.animeId;
   const episode = searchParams.get("ep") || "";
 
   if (!animeSlug) {
