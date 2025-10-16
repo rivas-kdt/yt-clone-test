@@ -108,7 +108,8 @@ export default function AnimeWatchPage() {
       >
         <iframe
           ref={iframeRef}
-          src={source.video.link}
+          src={`/api/proxy/video?url=${encodeURIComponent(source.video.link)}`} 
+          // src={source.video.link}
           title="Anime Episode"
           width="100%"
           height="100%"
