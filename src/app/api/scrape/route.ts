@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 
-/** ----------------------------
- * Helper: fetch HTML for a URL
- * ---------------------------- */
 async function scrap(url: string) {
   const res = await fetch(url, {
     headers: {
@@ -18,9 +15,6 @@ async function scrap(url: string) {
   return res.text();
 }
 
-/** ---------------------------------------------------
- * Helper: get the first video of a playlist by playlistId
- * --------------------------------------------------- */
 async function getFirstVideoFromPlaylist(playlistId: string) {
   try {
     const res = await fetch(
@@ -71,9 +65,68 @@ async function getFirstVideoFromPlaylist(playlistId: string) {
   }
 }
 
-/** ----------------------------
- * Main API handler
- * ---------------------------- */
+async function getFirstVideoFromPlaylist2(playlistId: string, videoId: string) {
+  try {
+    const isMix = playlistId.startsWith("RD");
+
+    // Mixes (RD...) require /watch endpoint
+    const url = isMix
+      ? `https://www.youtube.com/watch?v=${videoId}&list=${playlistId}`
+      : `https://www.youtube.com/playlist?list=${playlistId}`;
+
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      },
+    });
+
+    const html = await res.text();
+    const match = html.match(/var ytInitialData = ([\s\S]*?);<\/script>/);
+    if (!match) return null;
+
+    const data = JSON.parse(match[1]);
+
+    // Try normal playlist structure first
+    let firstVideo =
+      data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer
+        ?.content?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer
+        ?.contents?.[0]?.playlistVideoListRenderer?.contents?.find(
+          (x: any) => x.playlistVideoRenderer
+        )?.playlistVideoRenderer;
+
+    // If not found, fallback to mix structure (playlistPanelVideoRenderer)
+    if (!firstVideo) {
+      firstVideo =
+        data?.contents?.twoColumnWatchNextResults?.playlist?.playlist
+          ?.contents?.find((x: any) => x.playlistPanelVideoRenderer)
+          ?.playlistPanelVideoRenderer;
+    }
+
+    if (!firstVideo) return null;
+
+    const firstVideoId = firstVideo.videoId;
+    const thumbnails = firstVideo.thumbnail?.thumbnails || [];
+    const thumbnail =
+      thumbnails.length > 0
+        ? thumbnails[thumbnails.length - 1].url
+        : `https://i.ytimg.com/vi/${firstVideoId}/hqdefault.jpg`; // fallback
+
+    const title =
+      firstVideo.title?.runs?.[0]?.text ||
+      firstVideo.title?.simpleText ||
+      "Unknown video";
+
+    return { firstVideoId, thumbnail, title };
+  } catch (err) {
+    console.error("Failed to fetch playlist data:", err);
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -81,10 +134,8 @@ export async function GET(request: Request) {
     const videoUrl =
       searchParams.get("url") || `https://www.youtube.com/watch?v=${videoId}`;
 
-    // 1️⃣ Fetch watch page HTML
     const html = await scrap(videoUrl);
 
-    // 2️⃣ Extract ytInitialData JSON
     const ytInitialDataRegex = /var ytInitialData = ([\s\S]*?);<\/script>/;
     const match = html.match(ytInitialDataRegex);
     if (!match || !match[1]) {
@@ -99,10 +150,8 @@ export async function GET(request: Request) {
       data.contents?.twoColumnWatchNextResults?.secondaryResults
         ?.secondaryResults?.results || [];
 
-    // 3️⃣ Extract & normalize
     const videos = results
       .map((item: any) => {
-        /** 🎥 Normal video item **/
         const video = item.compactVideoRenderer || item.lockupViewModel;
         if (video) {
           const contentId = video.videoId || video.contentId;
@@ -151,23 +200,26 @@ export async function GET(request: Request) {
             null;
 
           const isPlaylist =
-            typeof contentId === "string" && contentId.startsWith("PL");
+            typeof contentId === "string" &&
+            (contentId.startsWith("PL") || contentId.startsWith("RD"));
 
-          // ✅ Playlist placeholder (we’ll enrich later)
           if (isPlaylist) {
+            const isMix = contentId.startsWith("RD");
+
             return {
-              type: "playlist",
+              type: isMix ? "mix" : "playlist",
               id: contentId,
               title,
               thumbnail: null,
               channel: { id: channelId, title: channelTitle },
-              views: "View full playlist",
+              views: isMix ? "Auto-generated Mix" : "View full playlist",
               publishedAt: null,
-              url: `/playlist?list=${contentId}`,
+              url: isMix
+                ? `/watch?v=${videoId || contentId}&list=${contentId}`
+                : `/playlist?list=${contentId}`,
             };
           }
 
-          // 🎬 Normal video
           return {
             type: "video",
             id: contentId,
@@ -181,7 +233,6 @@ export async function GET(request: Request) {
           };
         }
 
-        /** 📜 Compact playlist item **/
         const playlist = item.compactPlaylistRenderer;
         if (playlist) {
           const playlistId = playlist.playlistId;
@@ -214,8 +265,8 @@ export async function GET(request: Request) {
     // 4️⃣ Enrich playlist items with real first video data
     await Promise.all(
       videos.map(async (vid: any) => {
-        if (vid.type === "playlist") {
-          const info = await getFirstVideoFromPlaylist(vid.id);
+        if (vid.type === "playlist" || vid.type === "mix") {
+          const info = await getFirstVideoFromPlaylist2(vid.id, videoId || "");
           if (info) {
             vid.thumbnail = info.thumbnail;
             vid.url = `/watch?v=${info.firstVideoId}&list=${vid.id}`;

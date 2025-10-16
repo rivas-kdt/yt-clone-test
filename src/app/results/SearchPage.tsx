@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import Link from "next/link";
+import axios from "axios";
 
 function titleCleaner(title: string) {
   return title
@@ -21,6 +22,10 @@ export default function SearchPage() {
   const query = searchParams.get("q");
 
   const [videos, setVideos] = useState<any[]>([]);
+
+  const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
+  const [animeResults, setAnimeResults] = useState<any[]>([]);
+
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -33,6 +38,18 @@ export default function SearchPage() {
           );
           const data = await res.json();
           setVideos(data.videos || []);
+
+          const ytRes = await axios.get(
+            `/api/youtube/search?q=${encodeURIComponent(query)}`
+          );
+          setYoutubeResults(ytRes.data.videos || []);
+
+          // ✅ Fetch 9anime results (new)
+          const animeRes = await axios.get(
+            `/api/9anime/search?q=${encodeURIComponent(query)}`
+          );
+          setAnimeResults(animeRes.data.results || []);
+
           console.log("Fetched videos:", data.videos);
         } catch (error) {
           console.error("Error fetching YouTube data:", error);
@@ -60,7 +77,7 @@ export default function SearchPage() {
             <>
               <div className="flex justify-end mb-8">
                 <div className="flex flex-col gap-4 w-full max-w-2xl bg-[#353535]/40">
-                  {videos.map((video: any) => (
+                  {youtubeResults.map((video: any) => (
                     <Link
                       key={video.id}
                       href={`/watch?v=${video.id}`}
@@ -102,6 +119,18 @@ export default function SearchPage() {
                       </div>
                     </Link>
                   ))}
+
+                  {animeResults.length > 0 && (
+                    <>
+                      <h2 className=" font-semibold tracking-wide text-white">Anime Results</h2>
+                      {animeResults.map((anime) => (
+                        <Link key={anime.id} href={`/a/detail/${anime.id}`}>
+                          <img src={anime.img} alt={anime.title} width={120} />
+                          <div>{anime.title}</div>
+                        </Link>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
             </>
