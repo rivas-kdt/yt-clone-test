@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import ReactPlayer from "react-player";
 
 type VideoSource = {
   link: string;
@@ -23,6 +24,7 @@ type SourceResponse = {
   video: VideoSource;
   allServers: ServerItem[];
   message?: string;
+  streamUrl?: string; // ✅ added for parsed .m3u8/mp4
 };
 
 export default function AnimeWatchPage() {
@@ -34,7 +36,6 @@ export default function AnimeWatchPage() {
   const [source, setSource] = useState<SourceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [size, setSize] = useState("max-w-[350px]");
-
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   /** 🎞 Fetch source and related anime */
@@ -47,7 +48,7 @@ export default function AnimeWatchPage() {
         const data = await res.json();
         setSource(data);
       } catch (err) {
-        console.error(err);
+        console.error("❌ Failed to load source:", err);
       } finally {
         setLoading(false);
       }
@@ -82,6 +83,9 @@ export default function AnimeWatchPage() {
       </main>
     );
 
+  // 🎬 Prefer direct .m3u8/mp4 stream if available, otherwise fallback to iframe link
+  const videoUrl = source.streamUrl || source.video?.link;
+
   return (
     <div
       className={`flex flex-col p-4 h-[calc(100vh-72px)] bg-[url(/images/bg.png)] ${
@@ -106,16 +110,26 @@ export default function AnimeWatchPage() {
         className={`relative w-full ${size}`}
         style={{ aspectRatio: "16/9" }}
       >
-        <iframe
-          ref={iframeRef}
-          src={`/api/proxy/video?url=${encodeURIComponent(source.video.link)}`} 
-          // src={source.video.link}
-          title="Anime Episode"
-          width="100%"
-          height="100%"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full rounded-lg overflow-hidden border-none"
-        />
+        {(typeof ReactPlayer.canPlay === "function" && ReactPlayer.canPlay(videoUrl)) ? (
+          <ReactPlayer
+            src={videoUrl}
+            width="100%"
+            height="100%"
+            controls
+            playing
+            className="absolute inset-0 rounded-lg overflow-hidden"
+          />
+        ) : (
+          <iframe
+            ref={iframeRef}
+            src={videoUrl}
+            title="Anime Episode"
+            width="100%"
+            height="100%"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full rounded-lg overflow-hidden border-none"
+          />
+        )}
       </div>
     </div>
   );

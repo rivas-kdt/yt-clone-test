@@ -1,30 +1,38 @@
-// /api/proxy/video?url=<encoded-video-url>
 import { NextResponse } from "next/server";
-import axios from "axios";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
   const videoUrl = searchParams.get("url");
-  if (!videoUrl) return NextResponse.json({ error: "Missing URL" }, { status: 400 });
+
+  if (!videoUrl) {
+    return NextResponse.json({ error: "Missing URL" }, { status: 400 });
+  }
 
   try {
-    const res = await axios.get(videoUrl, {
-      responseType: "stream",
+    const res = await fetch(videoUrl, {
       headers: {
         referer: "https://9animetv.to/",
+        origin: "https://9animetv.to",
         "user-agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+        "accept-language": "en-US,en;q=0.9",
       },
+      cache: "no-store",
     });
 
-    const headers = new Headers();
-    res.headers &&
-      Object.entries(res.headers).forEach(([key, value]) => {
-        if (typeof value === "string") headers.set(key, value);
-      });
+    if (!res.ok) {
+      return NextResponse.json({ error: `Failed to fetch: ${res.status}` }, { status: res.status });
+    }
 
-    return new Response(res.data, { headers });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch video" }, { status: 500 });
+    const contentType = res.headers.get("content-type") || "text/html";
+
+    return new Response(res.body, {
+      headers: {
+        "content-type": contentType,
+        "x-frame-options": "ALLOWALL", // allow iframe embedding
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
