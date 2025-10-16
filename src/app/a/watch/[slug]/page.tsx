@@ -94,7 +94,7 @@ export default function AnimeWatchPage() {
           <button
             key={k}
             className="bg-[#989898] rounded-sm px-2 aspect-square hover:bg-white"
-            onClick={() => handleChangeSize(k as any)}
+            onClick={() => handleChangeSize(k as "s" | "m" | "l" | "t")}
           >
             {k.toUpperCase()}
           </button>
