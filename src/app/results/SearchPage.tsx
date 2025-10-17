@@ -3,10 +3,11 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+// import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
+import { decrypt } from "@/lib/crypto";
 
 function titleCleaner(title: string) {
   return title
@@ -20,12 +21,9 @@ function titleCleaner(title: string) {
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q");
-
-  const [videos, setVideos] = useState<any[]>([]);
-
+  const decryptedQuery = decrypt(query);
+  // const [videos, setVideos] = useState<any[]>([]);
   const [youtubeResults, setYoutubeResults] = useState<any[]>([]);
-  const [animeResults, setAnimeResults] = useState<any[]>([]);
-
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -33,24 +31,15 @@ export default function SearchPage() {
       if (query) {
         setLoading(true);
         try {
-          const res = await fetch(
-            `/api/youtube/search?q=${encodeURIComponent(query)}`
-          );
-          const data = await res.json();
-          setVideos(data.videos || []);
-
+          // const res = await fetch(
+          //   `/api/youtube/search?q=${encodeURIComponent(decryptedQuery)}`
+          // );
+          // const data = await res.json();
+          // setVideos(data.videos || []);
           const ytRes = await axios.get(
-            `/api/youtube/search?q=${encodeURIComponent(query)}`
+            `/api/youtube/search?q=${encodeURIComponent(decryptedQuery)}`
           );
           setYoutubeResults(ytRes.data.videos || []);
-
-          // ✅ Fetch 9anime results (new)
-          const animeRes = await axios.get(
-            `/api/9anime/search?q=${encodeURIComponent(query)}`
-          );
-          setAnimeResults(animeRes.data.results || []);
-
-          console.log("Fetched videos:", data.videos);
         } catch (error) {
           console.error("Error fetching YouTube data:", error);
         } finally {
@@ -59,7 +48,7 @@ export default function SearchPage() {
       }
     };
     fetchSearchResults();
-  }, [query]);
+  }, [decryptedQuery, query]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-72px)] bg-[url(/images/bg.png)] items-center p-12 pb-0">
@@ -71,7 +60,7 @@ export default function SearchPage() {
             <p className="text-center mt-8 text-gray-400">
               Type something to search
             </p>
-          ) : videos.length === 0 ? (
+          ) : youtubeResults.length === 0 ? (
             <p className="text-center mt-8 text-gray-400">No results found</p>
           ) : (
             <>
@@ -80,10 +69,9 @@ export default function SearchPage() {
                   {youtubeResults.map((video: any) => (
                     <Link
                       key={video.id}
-                      href={`/watch?v=${video.id}`}
+                      href={`/w?v=${video.id}`}
                       className="flex gap-4 hover:bg-[#2b2b2b] rounded-lg p-2 transition"
                     >
-                      {/* Thumbnail with duration overlay */}
                       <div className="relative">
                         <Image
                           src={video.thumbnail}
@@ -98,8 +86,6 @@ export default function SearchPage() {
                           </span>
                         )}
                       </div>
-
-                      {/* Video info */}
                       <div className="flex flex-col justify-between">
                         <div>
                           <p className="text-white font-semibold leading-snug">
@@ -109,8 +95,6 @@ export default function SearchPage() {
                             {titleCleaner(video.channel.title)}
                           </p>
                         </div>
-
-                        {/* Published date */}
                         {video.publishedAt && (
                           <p className="text-xs text-gray-500">
                             Published: {video.publishedAt}
@@ -119,18 +103,6 @@ export default function SearchPage() {
                       </div>
                     </Link>
                   ))}
-
-                  {animeResults.length > 0 && (
-                    <>
-                      <h2 className=" font-semibold tracking-wide text-white">Anime Results</h2>
-                      {animeResults.map((anime) => (
-                        <Link key={anime.id} href={`/a/detail/${anime.id}`}>
-                          <img src={anime.img} alt={anime.title} width={120} />
-                          <div>{anime.title}</div>
-                        </Link>
-                      ))}
-                    </>
-                  )}
                 </div>
               </div>
             </>
