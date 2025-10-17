@@ -96,7 +96,11 @@ export default function Home() {
       ) : (
         <>
           <div className="w-full min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2 bg-black">
-            <iframe src="/api/proxy/vscode" className=" w-full h-full"></iframe>
+            <iframe
+              src="/api/proxy/vscode"
+              className=" w-full h-full"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            ></iframe>
           </div>
           <div className="max-w-lg min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2">
             <div className=" flex justify-end w-full">
