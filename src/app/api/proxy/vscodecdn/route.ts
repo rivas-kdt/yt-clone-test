@@ -3,20 +3,37 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: { path?: string[] } }
 ) {
-  const target = `https://main.vscode-cdn.net/${params.path.join("/")}`;
-  const res = await fetch(target);
+  try {
+    const { path } = context.params;
+    if (!path || path.length === 0) {
+      return NextResponse.json({ error: "Missing path" }, { status: 400 });
+    }
 
-  const contentType =
-    res.headers.get("content-type") || "application/octet-stream";
-  const buffer = await res.arrayBuffer();
+    const targetUrl = `https://main.vscode-cdn.net/${path.join("/")}`;
+    const res = await fetch(targetUrl);
 
-  return new NextResponse(buffer, {
-    headers: {
-      "Content-Type": contentType,
-      "Access-Control-Allow-Origin": "*", // ✅ enables script loading
-      "Cache-Control": "public, max-age=86400",
-    },
-  });
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: `Failed to fetch ${targetUrl}` },
+        { status: res.status }
+      );
+    }
+
+    const contentType =
+      res.headers.get("content-type") || "application/octet-stream";
+    const buffer = await res.arrayBuffer();
+
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  } catch (err: unknown) {
+    console.error("Proxy error:", err);
+    return NextResponse.json({ error: "Error" }, { status: 500 });
+  }
 }
