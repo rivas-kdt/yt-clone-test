@@ -97,9 +97,11 @@ export default function Home() {
         <>
           <div className="w-full min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2 bg-black">
             <iframe
-              src="/api/proxy/vscode"
-              className=" w-full h-full"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              src="https://vscode.dev/"
+              title="VSCode Web"
+              className="w-full h-full border-none"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
+              allow="clipboard-read; clipboard-write; fullscreen; accelerometer; camera; microphone; geolocation"
             ></iframe>
           </div>
           <div className="max-w-lg min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2">
