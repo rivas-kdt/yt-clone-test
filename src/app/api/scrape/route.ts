@@ -213,7 +213,7 @@ export async function GET(request: Request) {
               views: isMix ? "Auto-generated Mix" : "View full playlist",
               publishedAt: null,
               url: isMix
-                ? `/watch?v=${videoId || contentId}&list=${contentId}`
+                ? `/w?v=${videoId || contentId}&list=${contentId}`
                 : `/playlist?list=${contentId}`,
             };
           }
@@ -227,7 +227,7 @@ export async function GET(request: Request) {
             channel: { id: channelId, title: channelTitle },
             views,
             publishedAt,
-            url: `/watch?v=${contentId}`,
+            url: `/w?v=${contentId}`,
           };
         }
 
