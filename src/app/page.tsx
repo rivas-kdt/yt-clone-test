@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function titleCleaner(title: string) {
   return title
@@ -21,7 +21,9 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [feedVideos, setFeedVideos] = useState<any[]>([]);
   const [feedPlaylists, setFeedPlaylists] = useState<any[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true); // toggle sidebar
 
+  // 🧠 Load local search history
   const getSearchHistory = (): string[] => {
     if (typeof window === "undefined") return [];
     try {
@@ -31,6 +33,7 @@ export default function Home() {
     }
   };
 
+  // 🏠 Personalized homepage feed
   useEffect(() => {
     const fetchLocalFeed = async () => {
       const history = getSearchHistory();
@@ -47,10 +50,6 @@ export default function Home() {
             `/api/youtube/search?q=${encodeURIComponent(term)}`
           );
           const data = await res.json();
-          console.log(
-            `/api/youtube/search?q=${encodeURIComponent(term)}:`,
-            data
-          );
 
           if (data?.videos?.length || data?.playlists?.length) {
             aggregatedVideos.push(...(data.videos || []));
@@ -71,7 +70,7 @@ export default function Home() {
             .sort((a, b) => a[0] - b[0])
             .map((a) => a[1]);
 
-        setFeedVideos(shuffle(uniqueVideos).slice());
+        setFeedVideos(shuffle(uniqueVideos).slice(0, 24));
         setFeedPlaylists(shuffle(uniquePlaylists).slice(0, 8));
       } catch (err) {
         console.error("Feed error:", err);
@@ -90,28 +89,42 @@ export default function Home() {
   };
 
   return (
-    <main className="flex justify-end bg-[url(/images/bg.png)]">
-      {loading ? (
-        <Skeleton className="w-full min-h-[calc(100vh-168px)]" />
-      ) : (
-        <>
-          <div className="w-full min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2 bg-black">
-            <iframe
-              src="http://localhost:3000/"
-              title="VSCode Web"
-              className="w-full h-full border-none"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
-            ></iframe>
-          </div>
-          <div className="max-w-lg min-h-[calc(100vh-120px)] overflow-auto scrollbar-thin px-2">
-            <div className=" flex justify-end w-full">
+    <main className="flex h-[calc(100vh-72px)] bg-[url(/images/bg.png)]">
+      {/* Left side (iframe area) */}
+      <div className="flex-1 relative bg-black overflow-hidden">
+        {loading ? (
+          <Skeleton className="w-full h-full" />
+        ) : (
+          <div className="w-full h-full border-none bg-[url(/images/bg.png)]" />
+        )}
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="absolute top-4 right-4 z-20 bg-gray-300 hover:bg-gray-400 text-black rounded-md p-2 transition"
+          title={sidebarOpen ? "Hide Feed" : "Show Feed"}
+        >
+          {sidebarOpen ? <ChevronRight /> : <ChevronLeft />}
+        </button>
+      </div>
+
+      {/* Right Sidebar */}
+      <div
+        className={`transition-all duration-300 ease-in-out bg-[#111]/95 backdrop-blur-md text-white border-l border-[#333] overflow-y-auto scrollbar-thin ${
+          sidebarOpen ? "max-w-sm opacity-100" : "w-0 opacity-0 hidden"
+        }`}
+      >
+        {sidebarOpen && (
+          <div className="p-4">
+            <div className="flex justify-end w-full">
               <button
                 onClick={handleClearData}
-                className=" cursor-pointer bg-gray-300 text-black hover:bg-gray-400 rounded-sm py-1 px-2"
+                className="cursor-pointer bg-gray-300 text-black hover:bg-gray-400 rounded-sm py-1 px-2"
               >
                 Clear Data
               </button>
             </div>
+
             {feedVideos.length > 0 || feedPlaylists.length > 0 ? (
               <>
                 <p className="font-bold text-2xl py-4">Recommended Videos</p>
@@ -136,6 +149,7 @@ export default function Home() {
                           </span>
                         )}
                       </div>
+
                       <div className="flex flex-col justify-between">
                         <div>
                           <p className="text-white font-semibold leading-snug">
@@ -154,10 +168,9 @@ export default function Home() {
                     </Link>
                   ))}
                 </div>
+
                 <Separator />
-                <p className="font-bold text-2xl pb-4">
-                  {/* Your Recommended Playlists */}
-                </p>
+                <p className="font-bold text-2xl py-4">Recommended Playlists</p>
                 <div className="grid grid-cols-1 gap-4 mb-8">
                   {feedPlaylists.map((playlist: any) => (
                     <div key={playlist.id}>
@@ -184,8 +197,8 @@ export default function Home() {
               </p>
             )}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </main>
   );
 }

@@ -12,17 +12,11 @@ const Header = () => {
 
   const saveSearchToLocal = (term: string) => {
     if (!term.trim()) return;
-
-    // 1️⃣ Get existing searches
     const prev = JSON.parse(localStorage.getItem("searchHistory") || "[]");
-
-    // 2️⃣ Remove duplicates and limit to last 10
     const updated = [term, ...prev.filter((x: string) => x !== term)].slice(
       0,
       10
     );
-
-    // 3️⃣ Save back
     localStorage.setItem("searchHistory", JSON.stringify(updated));
   };
 
