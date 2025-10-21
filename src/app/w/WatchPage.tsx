@@ -27,6 +27,7 @@ export default function WatchPage() {
   const [playlistTitle, setPlaylistTitle] = useState("");
   const [playlistInfo, setPlaylistInfo] = useState({ channel: "", total: "" });
   const [loading, setLoading] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
   const playerRef = useRef<any>(null);
 
@@ -94,13 +95,17 @@ export default function WatchPage() {
     const handleKeyDown = (event: KeyboardEvent) => {
       const active = document.activeElement as HTMLElement | null;
 
-      // ✅ Ignore key presses if typing in an input, textarea, or contenteditable
       if (
         active &&
         (active.tagName === "INPUT" ||
           active.tagName === "TEXTAREA" ||
           active.isContentEditable)
       ) {
+        return;
+      }
+
+      if (event.key === "h" || event.key === "H") {
+        setHidden(!hidden);
         return;
       }
 
@@ -142,7 +147,7 @@ export default function WatchPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [size]);
+  }, [size, hidden]);
 
   const isCentered =
     size === "max-w-[75%]" || size === "max-w-[50%]" || size === "max-w-[85%]";
@@ -158,7 +163,7 @@ export default function WatchPage() {
     <div
       className={`flex flex-col p-4 h-[calc(100vh-72px)] bg-[url(/images/bg.png)] ${
         isCentered ? "items-center justify-center" : "items-end justify-end"
-      }`}
+      } ${hidden ? "hidden" : "block"}`}
     >
       {size != "max-w-[85%]" && (
         <div className={`flex gap-2 mb-4 justify-end ${size} w-full`}>
@@ -173,11 +178,13 @@ export default function WatchPage() {
           ))}
         </div>
       )}
+
       {size === "max-w-[85%]" && (
         <div className=" absolute top-0 right-0">
           <p className=" px-2 rounded-xs bg-white text-red-500 font-semibold">{`Press "ESC" button to exit large screen`}</p>
         </div>
       )}
+
       <div
         className={`relative w-full ${size}`}
         style={{ aspectRatio: "16/9" }}
@@ -267,7 +274,7 @@ export default function WatchPage() {
                       {relatedVideos.map((v) => (
                         <Link
                           key={v.id}
-                          href={`/w?v=${v.id}`}
+                          href={v.url}
                           className="flex gap-4 hover:bg-[#2b2b2b] rounded-lg p-2 transition"
                         >
                           <div className="relative">

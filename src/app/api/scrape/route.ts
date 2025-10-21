@@ -92,18 +92,16 @@ async function getFirstVideoFromPlaylist2(playlistId: string, videoId: string) {
 
     // Try normal playlist structure first
     let firstVideo =
-      data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer
-        ?.content?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer
-        ?.contents?.[0]?.playlistVideoListRenderer?.contents?.find(
-          (x: any) => x.playlistVideoRenderer
-        )?.playlistVideoRenderer;
+      data?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents?.[0]?.playlistVideoListRenderer?.contents?.find(
+        (x: any) => x.playlistVideoRenderer
+      )?.playlistVideoRenderer;
 
     // If not found, fallback to mix structure (playlistPanelVideoRenderer)
     if (!firstVideo) {
       firstVideo =
-        data?.contents?.twoColumnWatchNextResults?.playlist?.playlist
-          ?.contents?.find((x: any) => x.playlistPanelVideoRenderer)
-          ?.playlistPanelVideoRenderer;
+        data?.contents?.twoColumnWatchNextResults?.playlist?.playlist?.contents?.find(
+          (x: any) => x.playlistPanelVideoRenderer
+        )?.playlistPanelVideoRenderer;
     }
 
     if (!firstVideo) return null;
@@ -269,7 +267,7 @@ export async function GET(request: Request) {
           const info = await getFirstVideoFromPlaylist2(vid.id, videoId || "");
           if (info) {
             vid.thumbnail = info.thumbnail;
-            vid.url = `/watch?v=${info.firstVideoId}&list=${vid.id}`;
+            vid.url = `/w?v=${info.firstVideoId}&list=${vid.id}`;
           }
         }
       })

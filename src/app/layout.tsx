@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
-import { SearchProvider } from "./context/SearchContext";
+// import { SearchProvider } from "./context/SearchContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +32,9 @@ export default function RootLayout({
         <div>
           {/* <SearchProvider> */}
           <Header />
-          {children}
+          <div className=" bg-[url(/images/bg.png)] h-[calc(100vh-72px)]">
+            {children}
+          </div>
           {/* </SearchProvider> */}
         </div>
       </body>
